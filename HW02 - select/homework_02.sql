@@ -52,11 +52,7 @@ WHERE
 	OR sil.Quantity > 20
 ORDER BY
 	DATENAME(QUARTER, si.InvoiceDate),
-	CASE
-		WHEN MONTH(si.InvoiceDate) >= 1 AND MONTH(si.InvoiceDate) <= 4 THEN 1
-		WHEN MONTH(si.InvoiceDate) >= 5 AND MONTH(si.InvoiceDate) <= 8 THEN 2
-		ELSE 3
-	END,
+	InvoiceThirdOfTheYear,
 	si.InvoiceDate;
 
 -- Вариант со смещением
@@ -82,11 +78,7 @@ WHERE
 	OR sil.Quantity > 20
 ORDER BY
 	DATENAME(QUARTER, si.InvoiceDate),
-	CASE
-		WHEN MONTH(si.InvoiceDate) >= 1 AND MONTH(si.InvoiceDate) <= 4 THEN 1
-		WHEN MONTH(si.InvoiceDate) >= 5 AND MONTH(si.InvoiceDate) <= 8 THEN 2
-		ELSE 3
-	END,
+	InvoiceThirdOfTheYear,
 	si.InvoiceDate
 	OFFSET 1000 ROWS FETCH NEXT 100 ROWS ONLY;
 
@@ -138,7 +130,7 @@ ORDER BY
 
 
 -- 6. Все ид и имена клиентов и их контактные телефоны, которые покупали товар Chocolate frogs 250g
-SELECT
+SELECT DISTINCT
 	sc.CustomerID		AS CustomerID,
 	sc.CustomerName		AS CustomerName,
 	ap_1.FullName		AS PrimaryContactName,
