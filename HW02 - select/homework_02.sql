@@ -95,11 +95,11 @@ ORDER BY
 -- Заказы поставщикам, которые были исполнены за 2014й год с доставкой Road Freight или Post,
 -- добавьте название поставщика, имя контактного лица принимавшего заказ
 SELECT DISTINCT
-	ppo.PurchaseOrderID			AS PurchaseOrderID,
-	ppo.OrderDate				AS OrderDate,
-	ps.SupplierName				AS Supplier,
-	ap.FullName					AS ContactPerson,
-	adm.DeliveryMethodName		AS DeliveryMethod
+	ppo.PurchaseOrderID		AS PurchaseOrderID,
+	ppo.OrderDate			AS OrderDate,
+	ps.SupplierName			AS Supplier,
+	ap.FullName				AS ContactPerson,
+	adm.DeliveryMethodName	AS DeliveryMethod
 FROM
 	Purchasing.PurchaseOrders AS ppo
 	INNER JOIN Purchasing.PurchaseOrderLines AS ppol
