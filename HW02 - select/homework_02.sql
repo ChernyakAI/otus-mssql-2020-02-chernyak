@@ -31,18 +31,18 @@ WHERE
 -- Добавьте вариант этого запроса с постраничной выборкой пропустив первую 1000 и отобразив следующие 100 записей.
 -- Соритровка должна быть по номеру квартала, трети года, дате продажи.
 SELECT
-	si.InvoiceID																	AS InvoiceID,
-	si.InvoiceDate																	AS InvoiceDate,
-	DATENAME(MONTH, si.InvoiceDate)													AS InvoiceMonthOfTheYear,
-	DATENAME(QUARTER, si.InvoiceDate)												AS InvoiceQuarterOfTheYear,
+	si.InvoiceID								AS InvoiceID,
+	si.InvoiceDate								AS InvoiceDate,
+	DATENAME(MONTH, si.InvoiceDate)				AS InvoiceMonthOfTheYear,
+	DATENAME(QUARTER, si.InvoiceDate)			AS InvoiceQuarterOfTheYear,
 	CASE
 		WHEN MONTH(si.InvoiceDate) >= 1 AND MONTH(si.InvoiceDate) <= 4 THEN 1
 		WHEN MONTH(si.InvoiceDate) >= 5 AND MONTH(si.InvoiceDate) <= 8 THEN 2
 		ELSE 3
-	END																				AS InvoiceThirdOfTheYear,
-	CONVERT(DATE, si.ConfirmedDeliveryTime)											AS DeliveryDate,
-	sil.UnitPrice																	AS Price,
-	sil.Quantity																	AS Quantity
+	END											AS InvoiceThirdOfTheYear,
+	CONVERT(DATE, si.ConfirmedDeliveryTime)		AS DeliveryDate,
+	sil.UnitPrice								AS Price,
+	sil.Quantity								AS Quantity
 FROM
 	Sales.Invoices AS si
 	INNER JOIN Sales.InvoiceLines AS sil
@@ -61,18 +61,18 @@ ORDER BY
 
 -- Вариант со смещением
 SELECT
-	si.InvoiceID																	AS InvoiceID,
-	si.InvoiceDate																	AS InvoiceDate,
-	DATENAME(MONTH, si.InvoiceDate)													AS InvoiceMonthOfTheYear,
-	DATENAME(QUARTER, si.InvoiceDate)												AS InvoiceQuarterOfTheYear,
+	si.InvoiceID								AS InvoiceID,
+	si.InvoiceDate								AS InvoiceDate,
+	DATENAME(MONTH, si.InvoiceDate)				AS InvoiceMonthOfTheYear,
+	DATENAME(QUARTER, si.InvoiceDate)			AS InvoiceQuarterOfTheYear,
 	CASE
 		WHEN MONTH(si.InvoiceDate) >= 1 AND MONTH(si.InvoiceDate) <= 4 THEN 1
 		WHEN MONTH(si.InvoiceDate) >= 5 AND MONTH(si.InvoiceDate) <= 8 THEN 2
 		ELSE 3
-	END																				AS InvoiceThirdOfTheYear,
-	CONVERT(DATE, si.ConfirmedDeliveryTime)											AS DeliveryDate,
-	sil.UnitPrice																	AS Price,
-	sil.Quantity																	AS Quantity
+	END											AS InvoiceThirdOfTheYear,
+	CONVERT(DATE, si.ConfirmedDeliveryTime)		AS DeliveryDate,
+	sil.UnitPrice								AS Price,
+	sil.Quantity								AS Quantity
 FROM
 	Sales.Invoices AS si
 	INNER JOIN Sales.InvoiceLines AS sil
