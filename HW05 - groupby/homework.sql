@@ -1,6 +1,7 @@
 ﻿-- =============================================
 -- Author:		Chernyak Andrey
--- Create date: 2020-06-21
+-- Create date: 2020-03-21
+-- Alter date: 	2020-03-24 - исправление
 -- Description:	Решение ДЗ по теме GROUP BY и HAVING
 -- =============================================
 
@@ -77,16 +78,16 @@ VALUES
 
 
 Результат вывода рекурсивного CTE:
-EmployeeID		Name			Title							EmployeeLevel
-1				Ken Sánchez		Chief Executive	Officer			1
-273				Brian Welcker	Vice President of Sales			2
-16				David Bradley	Marketing Manager				3
-23				Mary Gibson		Marketing Specialist			4
-274				Stephen Jiang	North American Sales Manager	3
-276				Linda Mitchell	Sales Representative			4
-275				Michael Blythe	Sales Representative			4
-285				Syed Abbas		Pacific Sales Manager			3
-286				Lynn Tsoflias	Sales Representative			4
+EmployeeID		Name					Title							EmployeeLevel
+1				Ken Sánchez				Chief Executive	Officer			1
+273				| Brian Welcker			Vice President of Sales			2
+16				|| David Bradley		Marketing Manager				3
+23				||| Mary Gibson			Marketing Specialist			4
+274				|| Stephen Jiang		North American Sales Manager	3
+276				||| Linda Mitchell		Sales Representative			4
+275				||| Michael Blythe		Sales Representative			4
+285				||| Syed Abbas			Pacific Sales Manager			3
+286				||| Lynn Tsoflias		Sales Representative			4
 */
 
 -- а. Временная таблица
@@ -98,7 +99,7 @@ WITH RecursiveCTE AS
 		CAST(CONCAT(FirstName, ' ' , LastName) AS NVARCHAR(255))	AS Name,
 		Title														AS Title,
 		1															AS EmployeeLevel,
-		CAST('|' AS NVARCHAR(255))									AS EmployeeLevelSymbol,
+		CAST('' AS NVARCHAR(255))									AS EmployeeLevelSymbol,
 		CAST(EmployeeID	AS NVARCHAR(255))							AS TreePath	
 	FROM dbo.MyEmployees
 	WHERE ManagerID IS NULL
@@ -140,7 +141,7 @@ WITH RecursiveCTE AS
 		CAST(CONCAT(FirstName, ' ' , LastName) AS NVARCHAR(255))	AS Name,
 		Title														AS Title,
 		1															AS EmployeeLevel,
-		CAST('|' AS NVARCHAR(255))									AS EmployeeLevelSymbol,
+		CAST('' AS NVARCHAR(255))									AS EmployeeLevelSymbol,
 		CAST(EmployeeID	AS NVARCHAR(255))							AS TreePath	
 	FROM dbo.MyEmployees
 	WHERE ManagerID IS NULL
