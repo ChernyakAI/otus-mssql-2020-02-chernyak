@@ -35,7 +35,6 @@ ORDER BY MonthOfSales;
 
 -- 3. Вывести сумму продаж, дату первой продажи и количество проданного по месяцам, по товарам, продажи которых менее 50 ед в месяц.
 --    Группировка должна быть по году и месяцу.
-
 SELECT
 	YEAR(si.InvoiceDate)	AS Year,
 	MONTH(si.InvoiceDate)	AS Month,
@@ -44,7 +43,9 @@ SELECT
 FROM Sales.Invoices AS si
 	INNER JOIN Sales.InvoiceLines AS sil
 		ON sil.InvoiceID = si.InvoiceID
-GROUP BY YEAR(si.InvoiceDate), MONTH(si.InvoiceDate)
+	INNER JOIN Warehouse.StockItems AS ws
+		ON ws.StockItemID = sil.StockItemID
+GROUP BY YEAR(si.InvoiceDate), MONTH(si.InvoiceDate), ws.StockItemName
 HAVING SUM(sil.Quantity) < 50
 ORDER BY Year, Month;
 
@@ -88,17 +89,17 @@ EmployeeID		Name			Title							EmployeeLevel
 286				Lynn Tsoflias	Sales Representative			4
 */
 
-
 -- а. Временная таблица
 DROP TABLE IF EXISTS #T1;
 WITH RecursiveCTE AS
 (
 	SELECT
-		EmployeeID						AS EmployeeID,
-		FirstName + ' ' + LastName		AS Name,
-		Title							AS Title,
-		1								AS EmployeeLevel,
-		CAST(EmployeeID	AS VARCHAR(255))	AS TreePath	
+		EmployeeID													AS EmployeeID,
+		CAST(CONCAT(FirstName, ' ' , LastName) AS NVARCHAR(255))	AS Name,
+		Title														AS Title,
+		1															AS EmployeeLevel,
+		CAST('|' AS NVARCHAR(255))									AS EmployeeLevelSymbol,
+		CAST(EmployeeID	AS NVARCHAR(255))							AS TreePath	
 	FROM dbo.MyEmployees
 	WHERE ManagerID IS NULL
 
@@ -106,10 +107,11 @@ WITH RecursiveCTE AS
 
 	SELECT
 		t1.EmployeeID,
-		t1.FirstName + ' ' + t1.LastName,
+		CAST(CONCAT(t2.EmployeeLevelSymbol, '| ', t1.FirstName, t1.LastName) AS NVARCHAR(255)),
 		t1.Title,
 		t2.EmployeeLevel + 1,
-		CAST(t2.TreePath + '_' + CAST(t1.EmployeeID	AS VARCHAR(255)) AS VARCHAR(255))
+		CAST(CONCAT(t2.EmployeeLevelSymbol, '|') AS NVARCHAR(255)),
+		CAST(t2.TreePath + '_' + CAST(t1.EmployeeID	AS NVARCHAR(255)) AS NVARCHAR(255))
 	FROM dbo.MyEmployees AS t1
 		INNER JOIN RecursiveCTE AS t2 ON t2.EmployeeID = t1.ManagerID
 )
@@ -128,16 +130,18 @@ DECLARE @T2 Table
 	Name NVARCHAR(70),
 	Title NVARCHAR(50),
 	EmployeeLevel SMALLINT,
+	EmployeeLevelSymbol NVARCHAR(255),
 	TreePath NVARCHAR(255)
 );
 WITH RecursiveCTE AS
 (
 	SELECT
-		EmployeeID						AS EmployeeID,
-		FirstName + ' ' + LastName		AS Name,
-		Title							AS Title,
-		1								AS EmployeeLevel,
-		CAST(EmployeeID	AS NVARCHAR(255))	AS TreePath	
+		EmployeeID													AS EmployeeID,
+		CAST(CONCAT(FirstName, ' ' , LastName) AS NVARCHAR(255))	AS Name,
+		Title														AS Title,
+		1															AS EmployeeLevel,
+		CAST('|' AS NVARCHAR(255))									AS EmployeeLevelSymbol,
+		CAST(EmployeeID	AS NVARCHAR(255))							AS TreePath	
 	FROM dbo.MyEmployees
 	WHERE ManagerID IS NULL
 
@@ -145,9 +149,10 @@ WITH RecursiveCTE AS
 
 	SELECT
 		t1.EmployeeID,
-		t1.FirstName + ' ' + t1.LastName,
+		CAST(CONCAT(t2.EmployeeLevelSymbol, '| ', t1.FirstName, t1.LastName) AS NVARCHAR(255)),
 		t1.Title,
 		t2.EmployeeLevel + 1,
+		CAST(CONCAT(t2.EmployeeLevelSymbol, '|') AS NVARCHAR(255)),
 		CAST(t2.TreePath + '_' + CAST(t1.EmployeeID	AS NVARCHAR(255)) AS NVARCHAR(255))
 	FROM dbo.MyEmployees AS t1
 		INNER JOIN RecursiveCTE AS t2 ON t2.EmployeeID = t1.ManagerID
@@ -161,6 +166,7 @@ FROM @T2
 ORDER BY TreePath;
 
 
+
 -- Опционально: Написать все эти же запросы, но, если за какой-то месяц не было продаж, то этот месяц тоже должен быть в результате и там должны быть нули.
 
 DECLARE @PeriodBegin DATE, @PeriodEnd DATE;
@@ -169,8 +175,6 @@ SET @PeriodEnd = (SELECT MAX(InvoiceDate) FROM Sales.Invoices);
 --SET @PeriodEnd = '20170101'; -- для проверки корректности, т.к. за все месяцы есть продажи
 
 -- 1.
-
-
 WITH CTE_Periods
 AS
 (
@@ -205,9 +209,7 @@ GROUP BY MonthOfSales
 ORDER BY MonthOfSales;
 
 
--- 3. Вывести сумму продаж, дату первой продажи и количество проданного по месяцам, по товарам, продажи которых менее 50 ед в месяц.
---    Группировка должна быть по году и месяцу.
-
+-- 2. Отобразить все месяцы, где общая сумма продаж превысила 10000
 WITH CTE_Periods
 AS
 (
@@ -218,15 +220,50 @@ AS
 	WHERE cp.Period < DATEADD(MONTH, -1, @PeriodEnd)
 )
 SELECT
-	UnionTable.Year				AS Year,
-	UnionTable.Month				AS Month,
-	MAX(UnionTable.FirstSaleDate)	AS FirstSaleDate,
+	UnionTable.MonthOfSales AS MonthOfSales
+FROM
+(
+	SELECT
+		FORMAT(cp.Period, 'yyyyMM') AS MonthOfSales,
+		0 AS ExtendedPriceSum
+	FROM CTE_Periods AS cp
+	UNION ALL
+	SELECT
+		FORMAT(si.InvoiceDate, 'yyyyMM'),
+		SUM(sil.ExtendedPrice) 
+	FROM Sales.Invoices AS si
+		INNER JOIN Sales.InvoiceLines AS sil
+			ON sil.InvoiceID = si.InvoiceID
+	GROUP BY FORMAT(si.InvoiceDate, 'yyyyMM')
+	HAVING SUM(sil.ExtendedPrice) > 10000
+) AS UnionTable 
+--WHERE UnionTable.ExtendedPriceSum > 10000
+GROUP BY UnionTable.MonthOfSales
+ORDER BY MonthOfSales;
+
+
+-- 3. Вывести сумму продаж, дату первой продажи и количество проданного по месяцам, по товарам, продажи которых менее 50 ед в месяц.
+--    Группировка должна быть по году и месяцу.
+WITH CTE_Periods
+AS
+(
+	SELECT @PeriodBegin AS Period
+	UNION ALL
+	SELECT DATEADD(MONTH, 1, cp.Period)
+	FROM CTE_Periods AS cp
+	WHERE cp.Period < DATEADD(MONTH, -1, @PeriodEnd)
+)
+SELECT
+	UnionTable.Year							AS Year,
+	UnionTable.Month						AS Month,
+	MAX(UnionTable.FirstSaleDate)			AS FirstSaleDate,
 	ISNULL(MAX(UnionTable.MonthlySales), 0)	AS MonthlySales
 FROM
 (
 	SELECT
 		YEAR(cp.Period) AS Year,
 		MONTH(cp.Period) AS Month,
+		NULL AS StockItemName,
 		NULL AS FirstSaleDate,
 		NULL AS MonthlySales
 	FROM CTE_Periods AS cp
@@ -235,21 +272,17 @@ FROM
 	SELECT
 		YEAR(si.InvoiceDate)	AS Year,
 		MONTH(si.InvoiceDate)	AS Month,
+		ws.StockItemName		AS StockItemName,
 		MIN(si.InvoiceDate)		AS FirstSaleDate,
 		SUM(sil.ExtendedPrice)	AS MonthlySales
 	FROM Sales.Invoices AS si
 		INNER JOIN Sales.InvoiceLines AS sil
 			ON sil.InvoiceID = si.InvoiceID
-	GROUP BY YEAR(si.InvoiceDate), MONTH(si.InvoiceDate)
+	INNER JOIN Warehouse.StockItems AS ws
+		ON ws.StockItemID = sil.StockItemID
+	GROUP BY YEAR(si.InvoiceDate), MONTH(si.InvoiceDate), ws.StockItemName
 	HAVING SUM(sil.Quantity) < 50
 
 ) AS UnionTable 
 GROUP BY Year, Month
 ORDER BY Year, Month;
-
-
-
-
-
-
-
