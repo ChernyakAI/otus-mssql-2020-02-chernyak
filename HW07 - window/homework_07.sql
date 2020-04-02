@@ -141,13 +141,13 @@ Total execution time: 00:00:00.865
 */
 SET STATISTICS IO ON;
 SELECT
-    Temp_2.Month
-    , Temp_2.StockItemName
+    TotalSales2016Numbered.Month
+    , TotalSales2016Numbered.StockItemName
 FROM
     (
         SELECT
-            Temp_1.*
-            , ROW_NUMBER() OVER (PARTITION BY Temp_1.Month ORDER BY Temp_1.Quantity DESC) RowNumber
+            TotalSales2016.*
+            , ROW_NUMBER() OVER (PARTITION BY TotalSales2016.Month ORDER BY TotalSales2016.Quantity DESC) RowNumber
         FROM
             (
                 SELECT DISTINCT
@@ -161,9 +161,9 @@ FROM
                         ON wsi.StockItemID = sil.StockItemID
                 WHERE si.InvoiceDate >= '20160101'
                     AND si.InvoiceDate < '20170101'
-            ) AS Temp_1
-    ) AS Temp_2
-WHERE Temp_2.RowNumber <= 2
+            ) AS TotalSales2016
+    ) AS TotalSales2016Numbered
+WHERE TotalSales2016Numbered.RowNumber <= 2
 ORDER BY Month,
     Quantity;
 
@@ -184,7 +184,7 @@ SELECT
     , wsi.StockItemName
     , wsi.Brand
     , wsi.UnitPrice
-    , ROW_NUMBER() OVER (PARTITION BY LEFT(wsi.StockItemName, 1) ORDER BY wsi.StockItemName) AS hw_3_1 -- todo
+    , ROW_NUMBER() OVER (PARTITION BY LEFT(wsi.StockItemName, 1) ORDER BY wsi.StockItemName) AS hw_3_1
     , COUNT(*) OVER () AS hw_3_2
     , COUNT(*) OVER (PARTITION BY LEFT(wsi.StockItemName, 1)) AS hw_3_3
     , LEAD(wsi.StockItemID) OVER (ORDER BY wsi.StockItemName) AS hw_3_4
@@ -226,42 +226,48 @@ WHERE RowNumber = 1;
 В результатах должно быть ид клиета, его название, ид товара, цена, дата покупки
 */
 SET STATISTICS IO ON;
+WITH CustomersItems AS
+(
+    SELECT DISTINCT
+        si.CustomerID
+        , sc.CustomerName
+        , ws.StockItemName
+        , ws.UnitPrice
+        , MAX(si.InvoiceDate) AS LastDate
+    FROM Sales.Invoices AS si
+        INNER JOIN Sales.InvoiceLines AS sil
+            ON sil.InvoiceID = si.InvoiceID
+        INNER JOIN Sales.Customers AS sc
+            ON sc.CustomerID = si.CustomerID
+        INNER JOIN Warehouse.StockItems AS ws
+            ON ws.StockItemID = sil.StockItemID
+    GROUP BY
+        si.CustomerID
+        , sc.CustomerName
+        , ws.StockItemName
+        , ws.UnitPrice
+),
+CustomerItemsNumbered AS
+(
+    SELECT
+        ci.CustomerID
+        , ci.CustomerName
+        , ci.StockItemName
+        , ci.UnitPrice
+        , ci.LastDate
+        , ROW_NUMBER() OVER (PARTITION BY ci.CustomerID ORDER BY ci.UnitPrice DESC) RowNumber
+
+    FROM CustomersItems AS ci
+)
 SELECT
-    CustomerFinal.CustomerID
-    , CustomerFinal.CustomerName
-    , CustomerFinal.StockItemName
-    , CustomerFinal.UnitPrice
-    , si.InvoiceDate
-FROM
-    (
-        SELECT
-            CustomersItems.CustomerID
-            , CustomersItems.CustomerName
-            , CustomersItems.StockItemName
-            , CustomersItems.UnitPrice
-            , ROW_NUMBER() OVER (PARTITION BY CustomersItems.CustomerID ORDER BY CustomersItems.UnitPrice DESC) RowNumber
-        FROM
-            (
-                SELECT DISTINCT
-                    si.CustomerID
-                    , sc.CustomerName
-                    , ws.StockItemName
-                    , ws.UnitPrice
-                FROM Sales.Invoices AS si
-                    INNER JOIN Sales.InvoiceLines AS sil
-                        ON sil.InvoiceID = si.InvoiceID
-                    INNER JOIN Sales.Customers AS sc
-                        ON sc.CustomerID = si.CustomerID
-                    INNER JOIN Warehouse.StockItems AS ws
-                        ON ws.StockItemID = sil.StockItemID
-            ) AS CustomersItems
-    ) AS CustomerFinal
-    LEFT JOIN Sales.InvoiceLines AS sil
-        ON sil.StockItemID = CustomerFinal.CustomerID
-    INNER JOIN Sales.Invoices AS si
-        ON si.InvoiceID = sil.InvoiceID
-WHERE CustomerFinal.RowNumber <= 2
-ORDER BY CustomerFinal.CustomerID;
+    cin.CustomerID
+    , cin.CustomerName
+    , cin.StockItemName
+    , cin.UnitPrice
+    , cin.LastDate
+FROM CustomerItemsNumbered AS cin
+WHERE cin.RowNumber <= 2
+ORDER BY cin.CustomerID;
 
 
 /*
@@ -492,8 +498,8 @@ FROM
 (
     SELECT
         so.CustomerID
-        , MAX(so.OrderDate) AS LastCustomerOrder -- OVER(PARTITION BY so.CustomerID)
-        , COUNT(*) AS OrdersCount -- OVER(PARTITION BY so.CustomerID)
+        , MAX(so.OrderDate) AS LastCustomerOrder
+        , COUNT(*) AS OrdersCount
     FROM Sales.Orders AS so
     GROUP BY so.CustomerID
 ) AS Temp
