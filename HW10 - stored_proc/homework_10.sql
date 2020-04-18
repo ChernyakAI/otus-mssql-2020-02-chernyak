@@ -90,4 +90,4 @@ GO
 -- вызов
 DECLARE @CustomerMaxInvoiceSum DECIMAL(18, 2) = 0;
 EXEC dbo.GetMaxCustomerInvoiceSum @CustomerID = 30, @Result = @CustomerMaxInvoiceSum OUTPUT;
-SELECT @CustomerMaxInvoiceSum;
+SELECT @CustomerMaxInvoiceSum; 
