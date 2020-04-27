@@ -1,0 +1,5 @@
+C:\Users\user\source\repos\Declination\Declination\obj\Debug\Declination.csprojAssemblyReference.cache
+C:\Users\user\source\repos\Declination\Declination\bin\Debug\Declination.dll
+C:\Users\user\source\repos\Declination\Declination\bin\Debug\Declination.pdb
+C:\Users\user\source\repos\Declination\Declination\obj\Debug\Declination.dll
+C:\Users\user\source\repos\Declination\Declination\obj\Debug\Declination.pdb
