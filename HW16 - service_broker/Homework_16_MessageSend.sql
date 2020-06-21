@@ -3,7 +3,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
-ALTER PROCEDURE SB.OrderReport_CustomerInvoices
+CREATE PROCEDURE SB.OrderReport_CustomerOrders
 	@CustomerID INT,
 	@DateBegin DATE,
 	@DateEnd DATE
@@ -11,15 +11,12 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
-    --Sending a Request Message to the Target	
-	DECLARE @InitDlgHandle UNIQUEIDENTIFIER; --open init dialog
-	DECLARE @RequestMessage NVARCHAR(4000); --сообщение, которое будем отправлять
+	DECLARE @InitDlgHandle UNIQUEIDENTIFIER;
+	DECLARE @RequestMessage NVARCHAR(4000);
 	
-	BEGIN TRAN --начинаем транзакцию
+	BEGIN TRAN
 
-	--Prepare the Message  !!!auto generate XML
 	SELECT @RequestMessage = (	SELECT
-									'OrderReport_InvoicesCountByCustomer' AS ReportType,
 									@CustomerID	AS CustomerID,
 									@DateBegin AS DateBegin,
 									@DateEnd AS DateEnd
@@ -28,7 +25,6 @@ BEGIN
 								FOR XML AUTO, root('RequestMessage')
 	); 
 	
-	--Determine the Initiator Service, Target Service and the Contract 
 	BEGIN DIALOG @InitDlgHandle
 	FROM SERVICE
 	[//WWI/SB/InitiatorService]
@@ -43,7 +39,7 @@ BEGIN
 	MESSAGE TYPE
 	[//WWI/SB/RequestMessage]
 	(@RequestMessage);
-	--SELECT @RequestMessage AS SentRequestMessage;--we can write data to log
+
 	COMMIT TRAN 
 END
 GO

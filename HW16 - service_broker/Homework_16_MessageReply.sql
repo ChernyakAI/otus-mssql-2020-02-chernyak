@@ -1,4 +1,4 @@
-CREATE PROCEDURE SB.CreateReport_TotalInvoicesByCustomer
+CREATE PROCEDURE SB.CreateReport_TotalOrdersByCustomer
 AS
 BEGIN
 
@@ -19,9 +19,6 @@ BEGIN
 		@MessageType = Message_Type_Name
 	FROM dbo.TargetQueueWWI; 
 
-	SELECT @Message;
-	SELECT @MessageType
-
 	SET @xml = CAST(@Message AS XML);
 
 	SELECT 
@@ -33,19 +30,19 @@ BEGIN
 
 	IF EXISTS (SELECT * FROM Sales.Invoices WHERE CustomerID = @CustomerID AND InvoiceDate BETWEEN @DateBegin AND @DateEnd)
 	BEGIN
-		MERGE SB.Report_TotalInvoicesByCustomer AS target  
+		MERGE SB.Report_TotalOrdersByCustomer AS target  
 		USING (
-			SELECT COUNT(*) AS InvoicesCount
+			SELECT COUNT(DISTINCT si.OrderID) AS OrdersCount
 			FROM Sales.Invoices AS si
 			WHERE CustomerID = @CustomerID
 				AND InvoiceDate BETWEEN @DateBegin AND @DateEnd
-		) AS SOURCE (InvoicesCount)  
+		) AS SOURCE (OrdersCount)  
 		ON (target.CustomerID = @CustomerID AND target.DateBegin = @DateBegin AND target.DateEnd = @DateEnd)  
 		WHEN MATCHED THEN
-			UPDATE SET target.InvoicesCount = source.InvoicesCount
+			UPDATE SET target.OrdersCount = source.OrdersCount
 		WHEN NOT MATCHED THEN  
 			INSERT   
-			VALUES (@CustomerID, @DateBegin, @DateEnd, source.InvoicesCount);
+			VALUES (@CustomerID, @DateBegin, @DateEnd, source.OrdersCount);
 	END
 	
 	-- Confirm and Send a reply

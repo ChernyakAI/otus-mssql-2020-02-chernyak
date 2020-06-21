@@ -46,10 +46,10 @@ GO
 
 -- схема для объектов, связанных с сервис-брокером
 CREATE SCHEMA SB;
-CREATE TABLE SB.Report_TotalInvoicesByCustomer(
+CREATE TABLE SB.Report_TotalOrdersByCustomer(
 	CustomerID INT NOT NULL,
 	DateBegin DATE NOT NULL,
 	DateEnd DATE NOT NULL,
-	InvoicesCount INT NULL,
+	OrdersCount INT NULL,
 	CONSTRAINT PK_Report_TIBC PRIMARY KEY CLUSTERED (CustomerID, DateBegin, DateEnd)
 )
